@@ -97,13 +97,11 @@ const modulo = (value, total) => {
 /**
  * En función del ancho de pantalla, definimos cuántas tarjetas
  * se muestran a la vez en el carrusel.
- * - <= 480px → 1 tarjeta (móvil chico)
- * - <= 768px → 3 tarjetas (móvil grande / tablet)
+ * - <= 768px → 3 tarjetas (móviles / tablet)
  * - > 768px → hasta 5 tarjetas (escritorio)
  */
 const getMaxVisibleSlides = () => {
   const width = window.innerWidth || document.documentElement.clientWidth;
-  if (width <= 480) return 1;
   if (width <= 768) return 3;
   return 5;
 };

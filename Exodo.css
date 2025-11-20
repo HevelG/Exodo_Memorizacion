@@ -485,20 +485,20 @@ body {
   }
 
   .carousel-card {
-    flex-basis: min(120px, 45vw);
-    height: clamp(150px, 26vh, 210px);
+    flex-basis: clamp(95px, 28vw, 150px);
+    height: clamp(140px, 42vw, 210px);
   }
 
   .carousel-card--adjacent {
-    flex-basis: min(220px, 80vw);
-    min-height: clamp(190px, 34vh, 280px);
-    max-height: clamp(210px, 40vh, 300px);
+    flex-basis: clamp(105px, 30vw, 160px);
+    min-height: clamp(150px, 45vw, 230px);
+    max-height: clamp(170px, 50vw, 250px);
   }
 
   .carousel-card--selected {
-    flex-basis: min(260px, 90vw);
-    min-height: clamp(210px, 36vh, 300px);
-    max-height: clamp(240px, 45vh, 320px);
+    flex-basis: clamp(120px, 34vw, 180px);
+    min-height: clamp(170px, 52vw, 260px);
+    max-height: clamp(190px, 56vw, 280px);
   }
 
   .verse-panel__content {
