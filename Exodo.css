@@ -5,7 +5,8 @@
   --panel-overlay: rgba(5, 5, 6, 0.45);
   --text-muted: rgba(255, 255, 255, 0.75);
   --shadow-soft: 0 20px 45px rgba(0, 0, 0, 0.35);
-  --shell-padding: clamp(0.75rem, 2vh, 2.5rem);
+  --shell-padding-inline: clamp(0.9rem, 5vw, 3rem);
+  --shell-padding-block: clamp(0.75rem, 2vh, 2.5rem);
   font-family: "Poppins", "Segoe UI", system-ui, -apple-system, sans-serif;
 }
 
@@ -113,10 +114,11 @@ body {
 .page-shell {
   position: relative;
   z-index: 1;
-  width: min(1400px, 100vw);
+  width: min(1400px, 100%);
+  margin: 0 auto;
   min-height: 100vh;
-  padding: var(--shell-padding);
-  padding-top: 0;
+  padding-inline: var(--shell-padding-inline);
+  padding-block: var(--shell-padding-block);
   display: grid;
   grid-template-rows: auto 1fr;
   row-gap: clamp(0.5rem, 1.5vh, 1.25rem);
@@ -135,7 +137,7 @@ body {
 
 .info-column {
   flex: 0 0 auto;
-  width: min(640px, 70vw);
+  width: min(640px, 100%);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -229,6 +231,7 @@ body {
 .carousel {
   position: relative;
   padding-block: clamp(0.3rem, 0.8vh, 0.75rem);
+  padding-inline: clamp(0.25rem, 2vw, 1rem);
   width: min(1200px, 100%);
   margin: 0 auto;
 }
@@ -463,7 +466,8 @@ body {
 @media (max-width: 720px) {
   .page-shell {
     grid-template-rows: auto auto;
-    padding: 0.75rem 0.75rem 1rem;
+    padding-inline: clamp(0.85rem, 6vw, 1.6rem);
+    padding-block: clamp(0.6rem, 2vh, 1.25rem);
     row-gap: 0.75rem;
   }
 
@@ -478,6 +482,7 @@ body {
 
   .carousel {
     width: 100%;
+    padding-inline: clamp(0.35rem, 4vw, 1.2rem);
   }
 
   .carousel-track {
