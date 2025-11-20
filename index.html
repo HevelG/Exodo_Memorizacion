@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tarjetas de Versículo - Éxodo</title>
+    <link rel="stylesheet" href="Exodo.css" />
+  </head>
+  <body>
+    <div class="background-layer" id="backgroundLayer"></div>
+    <div class="page-shell" id="pageShell">
+      <div class="info-row">
+        <section class="info-column">
+          <aside class="verse-panel" aria-live="polite">
+            <div class="verse-panel__content" id="verseContent">
+              <div class="verse-panel__reference" id="verseReference"></div>
+              <p id="verseText"></p>
+            </div>
+          </aside>
+        </section>
+      </div>
+
+      <main class="carousel-section">
+        <section class="carousel" aria-live="polite">
+          <div class="carousel-track" id="carouselTrack"></div>
+        </section>
+      </main>
+    </div>
+
+    <script src="Exodo.js" defer></script>
+  </body>
+</html>
