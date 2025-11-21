@@ -132,7 +132,7 @@ body {
   display: flex;
   justify-content: center;
   align-items: flex-start;
-  margin-top: 3rem;
+  margin-top: 1rem;
 }
 
 .info-column {
@@ -156,7 +156,7 @@ body {
 }
 
 .verse-panel__reference {
-  font-size: clamp(1.05rem, 2.1vw, 1.4rem);
+  font-size: clamp(0.95rem, 1.8vw, 1.2rem);
   font-weight: 600;
   margin-bottom: 0.5rem;
   color: var(--gold);
@@ -164,17 +164,18 @@ body {
 
 .verse-panel__content {
   min-height: clamp(110px, 18vh, 180px);
-  max-height: clamp(130px, 23vh, 220px);
   position: relative;
   overflow: hidden;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  font-size: clamp(1rem, 2.1vw, 1.3rem);
-  line-height: 1.6;
+  font-size: 0.85rem;
+  line-height: 1.5;
   color: var(--gold-soft);
   text-align: center;
+  height: auto;
+  transition: height 0.25s ease, font-size 0.2s ease;
 }
 
 .verse-panel__content p {
@@ -224,7 +225,7 @@ body {
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
-  padding-bottom: 3rem;
+  padding-bottom: 5.5rem;
   min-height: 0;
 }
 
@@ -240,7 +241,7 @@ body {
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  gap: clamp(0.8rem, 1.8vw, 1.5rem);
+  gap: clamp(0.6rem, 1.2vw, 1.1rem);
   perspective: 1200px;
   will-change: transform;
   isolation: isolate;
@@ -254,9 +255,9 @@ body {
   cursor: pointer;
   border-radius: 22px;
   overflow: hidden;
-  flex: 0 0 clamp(110px, 13vw, 150px);
+  flex: 0 1 clamp(100px, 9vw, 125px);
   aspect-ratio: 3 / 4;
-  height: clamp(140px, 20vh, 210px);
+  height: clamp(130px, 18vh, 180px);
   box-shadow: 0 10px 26px rgba(0, 0, 0, 0.35);
   transition:
     transform 0.35s ease,
@@ -347,7 +348,7 @@ body {
 }
 
 .carousel-card--selected {
-  flex-basis: clamp(260px, 35vw, 420px);
+  flex: 0 1 clamp(220px, 24vw, 320px);
   transform: translateY(-12px);
   box-shadow: 0 32px 60px rgba(0, 0, 0, 0.65);
   border: 1px solid rgba(255, 255, 255, 0.18);
@@ -355,8 +356,8 @@ body {
   background: #ffffff;
   aspect-ratio: auto;
   height: auto;
-  min-height: clamp(240px, 38vh, 380px);
-  max-height: clamp(280px, 55vh, 420px);
+  min-height: clamp(210px, 32vh, 320px);
+  max-height: clamp(240px, 48vh, 360px);
   padding: clamp(0.2rem, 0.5vh, 0.6rem);
   display: flex;
   align-items: center;
@@ -389,8 +390,8 @@ body {
 }
 
 .carousel-card--adjacent {
-  flex: 0 0 clamp(180px, 26vw, 300px);
-  height: clamp(190px, 32vh, 300px);
+  flex: 0 1 clamp(150px, 16vw, 220px);
+  height: clamp(160px, 26vh, 240px);
   transform: translateY(-6px);
   box-shadow: 0 22px 45px rgba(0, 0, 0, 0.55);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -426,16 +427,240 @@ body {
 
 .carousel-card__caption {
   position: absolute;
-  top: calc(100% + 0.45rem);
+  top: calc(100% + 0.1rem);
   left: 50%;
   transform: translateX(-50%);
   margin: 0;
-  font-size: clamp(0.9rem, 2vw, 1.05rem);
+  font-size: clamp(0.82rem, 1.7vw, 0.98rem);
   color: var(--gold);
   font-weight: 600;
   letter-spacing: 0.02em;
   text-align: center;
   white-space: nowrap;
+}
+
+.expand-button {
+  position: absolute;
+  top: -25px;
+  left: 50%;
+  transform: translate(-50%, -100%);
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  border: 1px solid rgba(243, 210, 124, 0.6);
+  background: rgba(0, 0, 0, 0.5);
+  color: var(--gold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0.5;
+  backdrop-filter: blur(8px);
+  transition: opacity 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+  z-index: 4;
+}
+
+.expand-button:hover,
+.expand-button:focus-visible {
+  opacity: 1;
+  transform: translate(-50%, -110%) scale(1.03);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.55);
+  outline: none;
+}
+
+.expand-button svg {
+  width: 22px;
+  height: 22px;
+}
+
+.image-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.82);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+  z-index: 999;
+}
+
+.image-overlay.is-visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.image-overlay__content {
+  position: relative;
+  max-width: 92vw;
+  max-height: 92vh;
+  padding: clamp(0.65rem, 1vh, 1rem);
+  background: rgba(8, 8, 10, 0.82);
+  border-radius: 18px;
+  border: 1px solid rgba(243, 210, 124, 0.35);
+  box-shadow: 0 20px 46px rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.image-overlay__img {
+  max-width: 90vw;
+  max-height: 85vh;
+  object-fit: contain;
+  border-radius: 12px;
+  display: block;
+}
+
+.image-overlay__close {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  border: 1px solid rgba(243, 210, 124, 0.5);
+  background: rgba(0, 0, 0, 0.6);
+  color: var(--gold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.image-overlay__close:hover,
+.image-overlay__close:focus-visible {
+  opacity: 1;
+  transform: scale(1.05);
+  outline: none;
+}
+
+body.overlay-open {
+  overflow: hidden;
+}
+
+.map-view {
+  display: none;
+  position: relative;
+  width: min(1400px, 100%);
+  margin: 0 auto;
+  min-height: calc(100vh - 72px);
+  padding-inline: var(--shell-padding-inline);
+  padding-block: var(--shell-padding-block);
+  box-sizing: border-box;
+}
+
+body.map-mode .page-shell {
+  display: none;
+}
+
+body.map-mode .map-view {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.map-viewport {
+  position: relative;
+  width: 100%;
+  height: calc(100vh - 120px);
+  max-height: 900px;
+  background: rgba(0, 0, 0, 0.55);
+  border: 1px solid rgba(243, 210, 124, 0.25);
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 18px 36px rgba(0, 0, 0, 0.55);
+  touch-action: none;
+  cursor: grab;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.map-viewport.is-dragging {
+  cursor: grabbing;
+}
+
+.map-image {
+  width: auto;
+  height: auto;
+  max-width: none;
+  max-height: none;
+  transform: translate3d(0px, 0px, 0) scale(1.08);
+  transform-origin: center center;
+  user-select: none;
+  pointer-events: none;
+  transition: transform 0.18s ease;
+  display: block;
+}
+
+.map-zoom-controls {
+  position: absolute;
+  right: 1rem;
+  bottom: 1rem;
+  display: flex;
+  gap: 0.5rem;
+  z-index: 5;
+}
+
+.map-zoom-controls button {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  border: 1px solid rgba(243, 210, 124, 0.5);
+  background: rgba(0, 0, 0, 0.6);
+  color: var(--gold);
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.45);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+}
+
+.map-zoom-controls button:hover,
+.map-zoom-controls button:focus-visible {
+  transform: translateY(-1px);
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.55);
+  outline: none;
+}
+
+.view-toggle-footer {
+  position: fixed;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  padding: 0.65rem 1rem;
+  background: rgba(0, 0, 0, 0.55);
+  border-top: 1px solid rgba(243, 210, 124, 0.25);
+  backdrop-filter: blur(10px);
+  display: flex;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.view-toggle-footer button {
+  background: rgba(0, 0, 0, 0.65);
+  color: var(--gold);
+  border: 1px solid rgba(243, 210, 124, 0.5);
+  border-radius: 12px;
+  padding: 0.55rem 1.2rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+}
+
+.view-toggle-footer button:hover,
+.view-toggle-footer button:focus-visible {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.45);
+  outline: none;
+}
+
+body {
+  padding-bottom: 78px;
 }
 
 /* ─────────────────────────────
@@ -476,7 +701,7 @@ body {
   }
 
   .carousel-section {
-    padding-bottom: 0.75rem;
+    padding-bottom: 3.25rem;
     justify-content: flex-start;
   }
 
@@ -491,25 +716,24 @@ body {
 
   .carousel-card {
     flex-basis: clamp(75px, 22vw, 120px);
-    height: clamp(120px, 34vw, 180px);
+    height: clamp(110px, 32vw, 160px);
   }
 
   .carousel-card--adjacent {
     flex-basis: clamp(85px, 25vw, 135px);
     min-height: clamp(130px, 40vw, 210px);
-    max-height: clamp(150px, 46vw, 230px);
+    max-height: clamp(140px, 44vw, 210px);
   }
 
   .carousel-card--selected {
     flex-basis: clamp(95px, 30vw, 150px);
     min-height: clamp(150px, 48vw, 230px);
-    max-height: clamp(170px, 52vw, 250px);
+    max-height: clamp(160px, 52vw, 235px);
   }
 
   .verse-panel__content {
     min-height: clamp(90px, 18vh, 150px);
-    max-height: clamp(105px, 22vh, 170px);
-    font-size: clamp(0.95rem, 4vw, 1.15rem);
+    font-size: 0.85rem;
   }
 }
 

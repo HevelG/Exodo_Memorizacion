@@ -82,27 +82,105 @@ const verseContentEl = document.getElementById("verseContent");
 const backgroundLayerEl = document.getElementById("backgroundLayer");
 const carouselTrackEl = document.getElementById("carouselTrack");
 const pageShellEl = document.getElementById("pageShell");
+const mapViewEl = document.getElementById("mapView");
+const mapViewportEl = document.getElementById("mapViewport");
+const mapImageEl = document.getElementById("mapImage");
+const viewToggleBtn = document.getElementById("viewToggleBtn");
+const zoomInBtn = document.getElementById("zoomInBtn");
+const zoomOutBtn = document.getElementById("zoomOutBtn");
+let overlayEl = null;
+let overlayImageEl = null;
+let overlayCloseEl = null;
+let overlayContentEl = null;
 
 let selectedIndex = 0;
 let isVerseAnimating = false;
 let pendingVerseData = null;
 let backgroundFadeTimeout;
 const BACKGROUND_TARGET_OPACITY = 0.32;
+const MAP_DEFAULT_SCALE = .3;
+const MAP_MAX_SCALE = 2.2;
+const MAP_ZOOM_STEP = 0.12;
+let isMapMode = false;
+const mapState = { scale: MAP_DEFAULT_SCALE, x: 0, y: 0 };
+const mapDrag = { active: false, startX: 0, startY: 0, originX: 0, originY: 0, pointerId: null };
 
 const modulo = (value, total) => {
   const remainder = value % total;
   return remainder >= 0 ? remainder : remainder + total;
 };
 
+const resizeVerseContentToFit = () => {
+  if (!verseContentEl) return;
+
+  // Reset styles to measure natural size
+  verseContentEl.style.height = "auto";
+  verseContentEl.style.fontSize = "";
+
+  const styles = window.getComputedStyle(verseContentEl);
+  const fontCapPx = 0.85 * 16; // 0.85rem en px; cap para evitar crecimiento
+  const baseFontSize = Math.min(parseFloat(styles.fontSize) || fontCapPx, fontCapPx);
+  verseContentEl.style.fontSize = `${baseFontSize}px`;
+
+  const minFontSize = baseFontSize * 0.82;
+  const viewportHeight =
+    window.innerHeight ||
+    document.documentElement.clientHeight ||
+    document.body.clientHeight ||
+    0;
+
+  // Limites razonables para no empujar al carrusel
+  const minHeight = Math.max(110, Math.min(viewportHeight * 0.22, 200));
+  const maxHeight = Math.max(minHeight + 20, Math.min(viewportHeight * 0.46, 360));
+
+  let currentFont = baseFontSize;
+  let contentHeight = verseContentEl.scrollHeight;
+  let guard = 0;
+
+  // Si supera el alto permitido, reducimos tipografía hasta que quepa
+  while (contentHeight > maxHeight && currentFont > minFontSize && guard < 16) {
+    currentFont -= 0.5;
+    verseContentEl.style.fontSize = `${currentFont}px`;
+    verseContentEl.style.height = "auto";
+    contentHeight = verseContentEl.scrollHeight;
+    guard += 1;
+  }
+
+  const finalHeight = Math.min(Math.max(contentHeight, minHeight), maxHeight);
+  verseContentEl.style.height = `${finalHeight}px`;
+};
+
+const getAvailableWidth = () => {
+  if (pageShellEl) {
+    const styles = window.getComputedStyle(pageShellEl);
+    const paddingLeft = parseFloat(styles.paddingLeft || "0");
+    const paddingRight = parseFloat(styles.paddingRight || "0");
+    return Math.max(
+      pageShellEl.clientWidth - paddingLeft - paddingRight,
+      0
+    );
+  }
+
+  return (
+    window.innerWidth ||
+    document.documentElement.clientWidth ||
+    document.body.clientWidth ||
+    0
+  );
+};
+
 /**
  * En función del ancho de pantalla, definimos cuántas tarjetas
  * se muestran a la vez en el carrusel.
- * - <= 768px → 3 tarjetas (móviles / tablet)
- * - > 768px → hasta 5 tarjetas (escritorio)
+ * Calculamos con el ancho disponible real (contenedor sin padding):
+ * - <= 720px → 3 tarjetas
+ * - <= 1100px → 4 tarjetas
+ * - > 1100px → 5 tarjetas
  */
 const getMaxVisibleSlides = () => {
-  const width = window.innerWidth || document.documentElement.clientWidth;
-  if (width <= 768) return 3;
+  const width = getAvailableWidth();
+  if (width <= 720) return 3;
+  if (width <= 1100) return 4;
   return 5;
 };
 
@@ -221,13 +299,46 @@ const renderCarousel = () => {
     img.alt = cardData.reference;
     card.appendChild(img);
 
-    card.addEventListener("click", () => handleCardSelection(cardIndex));
+    card.addEventListener("click", (event) => {
+      if (cardIndex === selectedIndex) {
+        event.preventDefault();
+        openOverlay(cardData.image, cardData.reference);
+        return;
+      }
+      handleCardSelection(cardIndex);
+    });
     wrapper.appendChild(card);
 
     const caption = document.createElement("p");
     caption.className = "carousel-card__caption";
     caption.textContent = cardData.reference;
     wrapper.appendChild(caption);
+
+    if (cardIndex === selectedIndex) {
+      const expandButton = document.createElement("button");
+      expandButton.type = "button";
+      expandButton.className = "expand-button";
+      expandButton.setAttribute("aria-label", "Ver imagen a pantalla completa");
+      expandButton.title = "Ver imagen a pantalla completa";
+      expandButton.innerHTML = `
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9.5 4.5H4.5V9.5" />
+          <path d="M4.5 4.5L9.5 9.5" />
+          <path d="M14.5 4.5H19.5V9.5" />
+          <path d="M19.5 4.5L14.5 9.5" />
+          <path d="M9.5 19.5H4.5V14.5" />
+          <path d="M4.5 19.5L9.5 14.5" />
+          <path d="M14.5 19.5H19.5V14.5" />
+          <path d="M19.5 19.5L14.5 14.5" />
+        </svg>
+      `;
+      expandButton.addEventListener("click", (event) => {
+        event.stopPropagation();
+        event.preventDefault();
+        openOverlay(cardData.image, cardData.reference);
+      });
+      wrapper.appendChild(expandButton);
+    }
 
     carouselTrackEl.appendChild(wrapper);
   });
@@ -254,6 +365,7 @@ const animateVerseChange = (data) => {
 
     verseReferenceEl.textContent = data.reference;
     verseTextEl.textContent = data.text;
+    resizeVerseContentToFit();
 
     verseContentEl.classList.remove("verse-content--fade-out");
     verseContentEl.classList.add("verse-content--fade-in");
@@ -283,9 +395,213 @@ const updateVersePanel = (animate = true) => {
   if (!animate) {
     verseReferenceEl.textContent = data.reference;
     verseTextEl.textContent = data.text;
+    resizeVerseContentToFit();
     return;
   }
   animateVerseChange(data);
+};
+
+const ensureOverlay = () => {
+  if (overlayEl) return;
+
+  overlayEl = document.createElement("div");
+  overlayEl.className = "image-overlay";
+  overlayEl.setAttribute("role", "dialog");
+  overlayEl.setAttribute("aria-modal", "true");
+  overlayEl.tabIndex = -1;
+  overlayEl.hidden = true;
+
+  overlayContentEl = document.createElement("div");
+  overlayContentEl.className = "image-overlay__content";
+
+  overlayCloseEl = document.createElement("button");
+  overlayCloseEl.type = "button";
+  overlayCloseEl.className = "image-overlay__close";
+  overlayCloseEl.setAttribute("aria-label", "Cerrar imagen a pantalla completa");
+  overlayCloseEl.textContent = "×";
+
+  overlayImageEl = document.createElement("img");
+  overlayImageEl.className = "image-overlay__img";
+  overlayImageEl.alt = "";
+
+  overlayContentEl.appendChild(overlayCloseEl);
+  overlayContentEl.appendChild(overlayImageEl);
+  overlayEl.appendChild(overlayContentEl);
+  document.body.appendChild(overlayEl);
+
+  overlayEl.addEventListener("click", (event) => {
+    if (event.target === overlayEl) {
+      closeOverlay();
+    }
+  });
+
+  overlayContentEl.addEventListener("click", (event) => {
+    event.stopPropagation();
+  });
+
+  overlayCloseEl.addEventListener("click", (event) => {
+    event.preventDefault();
+    closeOverlay();
+  });
+
+  window.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && overlayEl?.classList.contains("is-visible")) {
+      closeOverlay();
+    }
+  });
+};
+
+const openOverlay = (imageSrc, altText = "") => {
+  ensureOverlay();
+  overlayImageEl.src = imageSrc;
+  overlayImageEl.alt = altText;
+  overlayEl.hidden = false;
+
+  requestAnimationFrame(() => {
+    overlayEl.classList.add("is-visible");
+  });
+
+  document.body.classList.add("overlay-open");
+  overlayEl.focus({ preventScroll: true });
+};
+
+const closeOverlay = () => {
+  if (!overlayEl) return;
+  overlayEl.classList.remove("is-visible");
+  document.body.classList.remove("overlay-open");
+  setTimeout(() => {
+    overlayEl.hidden = true;
+    overlayImageEl.src = "";
+  }, 220);
+};
+
+const getViewportRect = () => {
+  if (!mapViewportEl) return { width: 0, height: 0 };
+  const rect = mapViewportEl.getBoundingClientRect();
+  return { width: rect.width, height: rect.height };
+};
+
+const getScaledMapSize = () => {
+  if (!mapImageEl) return { width: 0, height: 0 };
+  const naturalWidth = mapImageEl.naturalWidth || 0;
+  const naturalHeight = mapImageEl.naturalHeight || 0;
+  return { width: naturalWidth * mapState.scale, height: naturalHeight * mapState.scale };
+};
+
+const getFitScale = () => {
+  if (!mapImageEl || !mapViewportEl) return 1;
+  const viewport = getViewportRect();
+  const naturalWidth = mapImageEl.naturalWidth || 1;
+  const naturalHeight = mapImageEl.naturalHeight || 1;
+  const fitScale = Math.min(
+    viewport.width / naturalWidth,
+    viewport.height / naturalHeight
+  );
+  if (!Number.isFinite(fitScale) || fitScale <= 0) return 1;
+  return Math.min(1, fitScale);
+};
+
+const clampMapPosition = (x, y) => {
+  const viewport = getViewportRect();
+  const scaled = getScaledMapSize();
+  const maxOffsetX = Math.max((scaled.width - viewport.width) / 2, 0);
+  const maxOffsetY = Math.max((scaled.height - viewport.height) / 2, 0);
+
+  return {
+    x: Math.min(Math.max(x, -maxOffsetX), maxOffsetX),
+    y: Math.min(Math.max(y, -maxOffsetY), maxOffsetY),
+  };
+};
+
+const applyMapTransform = () => {
+  if (!mapImageEl) return;
+  const clamped = clampMapPosition(mapState.x, mapState.y);
+  mapState.x = clamped.x;
+  mapState.y = clamped.y;
+  mapImageEl.style.transform = `translate3d(${mapState.x}px, ${mapState.y}px, 0) scale(${mapState.scale})`;
+};
+
+const resetMapTransform = () => {
+  const fitScale = getFitScale();
+  mapState.scale = Math.max(MAP_DEFAULT_SCALE, fitScale * 1.05);
+  mapState.scale = Math.min(mapState.scale, MAP_MAX_SCALE);
+  mapState.x = 0;
+  mapState.y = 0;
+  applyMapTransform();
+};
+
+const zoomMap = (delta) => {
+  const minScale = getFitScale();
+  mapState.scale = Math.min(
+    MAP_MAX_SCALE,
+    Math.max(minScale, mapState.scale + delta)
+  );
+  applyMapTransform();
+};
+
+const enterMapMode = () => {
+  isMapMode = true;
+  document.body.classList.add("map-mode");
+  if (pageShellEl) pageShellEl.setAttribute("aria-hidden", "true");
+  if (mapViewEl) mapViewEl.setAttribute("aria-hidden", "false");
+  if (viewToggleBtn) {
+    viewToggleBtn.textContent = "Cambiar a Tarjetas";
+    viewToggleBtn.setAttribute("aria-pressed", "true");
+  }
+  resetMapTransform();
+};
+
+const exitMapMode = () => {
+  isMapMode = false;
+  document.body.classList.remove("map-mode");
+  if (pageShellEl) pageShellEl.removeAttribute("aria-hidden");
+  if (mapViewEl) mapViewEl.setAttribute("aria-hidden", "true");
+  if (viewToggleBtn) {
+    viewToggleBtn.textContent = "Cambiar a Mapa";
+    viewToggleBtn.setAttribute("aria-pressed", "false");
+  }
+};
+
+const toggleViewMode = () => {
+  if (isMapMode) {
+    exitMapMode();
+  } else {
+    enterMapMode();
+  }
+};
+
+const startMapDrag = (event) => {
+  if (!isMapMode || !mapViewportEl) return;
+  if (event.target.closest && event.target.closest(".map-zoom-controls")) return;
+  mapDrag.active = true;
+  mapDrag.startX = event.clientX;
+  mapDrag.startY = event.clientY;
+  mapDrag.originX = mapState.x;
+  mapDrag.originY = mapState.y;
+  mapDrag.pointerId = event.pointerId;
+  mapViewportEl.setPointerCapture(event.pointerId);
+  mapViewportEl.classList.add("is-dragging");
+};
+
+const moveMapDrag = (event) => {
+  if (!mapDrag.active || event.pointerId !== mapDrag.pointerId) return;
+  event.preventDefault();
+  const deltaX = event.clientX - mapDrag.startX;
+  const deltaY = event.clientY - mapDrag.startY;
+  const clamped = clampMapPosition(mapDrag.originX + deltaX, mapDrag.originY + deltaY);
+  mapState.x = clamped.x;
+  mapState.y = clamped.y;
+  applyMapTransform();
+};
+
+const endMapDrag = (event) => {
+  if (!mapDrag.active || (mapDrag.pointerId !== null && event.pointerId !== mapDrag.pointerId)) return;
+  mapDrag.active = false;
+  mapViewportEl?.classList.remove("is-dragging");
+  if (mapDrag.pointerId !== null && mapViewportEl?.hasPointerCapture(mapDrag.pointerId)) {
+    mapViewportEl.releasePointerCapture(mapDrag.pointerId);
+  }
+  mapDrag.pointerId = null;
 };
 
 const updateBackgroundLayer = (imagePath, index, animate = true) => {
@@ -357,6 +673,10 @@ const applyLayoutMode = () => {
 const handleResize = () => {
   applyLayoutMode();
   renderCarousel();
+  resizeVerseContentToFit();
+  if (isMapMode) {
+    applyMapTransform();
+  }
 };
 
 const bootstrap = () => {
@@ -366,6 +686,35 @@ const bootstrap = () => {
   renderCarousel();
   updateVersePanel(false);
   updateBackgroundLayer(verseCards[selectedIndex].image, selectedIndex, false);
+  resizeVerseContentToFit();
+  ensureOverlay();
+  exitMapMode();
+
+  if (viewToggleBtn) {
+    viewToggleBtn.addEventListener("click", toggleViewMode);
+  }
+
+  if (mapViewportEl) {
+    mapViewportEl.addEventListener("pointerdown", startMapDrag);
+    mapViewportEl.addEventListener("pointermove", moveMapDrag);
+    mapViewportEl.addEventListener("pointerup", endMapDrag);
+    mapViewportEl.addEventListener("pointercancel", endMapDrag);
+    mapViewportEl.addEventListener("pointerleave", endMapDrag);
+  }
+
+  mapImageEl?.addEventListener("load", () => {
+    resetMapTransform();
+  });
+
+  zoomInBtn?.addEventListener("click", (event) => {
+    event.preventDefault();
+    zoomMap(MAP_ZOOM_STEP);
+  });
+
+  zoomOutBtn?.addEventListener("click", (event) => {
+    event.preventDefault();
+    zoomMap(-MAP_ZOOM_STEP);
+  });
 
   window.addEventListener("resize", handleResize);
 };
