@@ -7,6 +7,7 @@
   --shadow-soft: 0 20px 45px rgba(0, 0, 0, 0.35);
   --shell-padding-inline: clamp(0.9rem, 5vw, 3rem);
   --shell-padding-block: clamp(0.75rem, 2vh, 2.5rem);
+  --footer-height: 78px;
   font-family: "Poppins", "Segoe UI", system-ui, -apple-system, sans-serif;
 }
 
@@ -660,7 +661,21 @@ body.map-mode .map-view {
 }
 
 body {
-  padding-bottom: 78px;
+  padding-bottom: var(--footer-height);
+}
+
+@media (min-width: 721px) {
+  .image-overlay {
+    padding-bottom: calc(var(--footer-height) + 1rem);
+  }
+
+  .image-overlay__content {
+    max-height: calc(92vh - var(--footer-height) - 1rem);
+  }
+
+  .image-overlay__img {
+    max-height: calc(85vh - var(--footer-height) - 1rem);
+  }
 }
 
 /* ─────────────────────────────
@@ -689,6 +704,19 @@ body {
 }
 
 @media (max-width: 720px) {
+  .expand-button {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    right: 10px;
+    bottom: 10px;
+  }
+
+  .expand-button svg {
+    width: 18px;
+    height: 18px;
+  }
+
   .page-shell {
     grid-template-rows: auto auto;
     padding-inline: clamp(0.85rem, 6vw, 1.6rem);
