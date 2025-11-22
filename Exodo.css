@@ -542,32 +542,32 @@ body.overlay-open {
   overflow: hidden;
 }
 
-.map-view {
-  display: none;
+body.map-page {
+  display: block;
+  min-height: 100vh;
+  padding: 0;
+  background-color: #060608;
+  color: #f5f5f5;
+  overflow: hidden;
+}
+
+body.map-page .map-view {
   position: relative;
-  width: min(1400px, 100%);
+  width: 100%;
   margin: 0 auto;
-  min-height: calc(100vh - 72px);
-  padding-inline: var(--shell-padding-inline);
-  padding-block: var(--shell-padding-block);
+  min-height: calc(100vh - var(--footer-height));
+  padding: clamp(0.85rem, 3vw, 2.4rem);
   box-sizing: border-box;
-}
-
-body.map-mode .page-shell {
-  display: none;
-}
-
-body.map-mode .map-view {
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.map-viewport {
+body.map-page .map-viewport {
   position: relative;
-  width: 100%;
-  height: calc(100vh - 120px);
-  max-height: 900px;
+  width: min(1400px, 100%);
+  height: calc(100vh - var(--footer-height) - clamp(1.4rem, 4vh, 3rem));
+  max-height: none;
   background: rgba(0, 0, 0, 0.55);
   border: 1px solid rgba(243, 210, 124, 0.25);
   border-radius: 18px;
@@ -584,12 +584,12 @@ body.map-mode .map-view {
   cursor: grabbing;
 }
 
-.map-image {
+body.map-page .map-image {
   width: auto;
   height: auto;
   max-width: none;
   max-height: none;
-  transform: translate3d(0px, 0px, 0) scale(1.08);
+  transform: translate3d(0px, 0px, 0) scale(1);
   transform-origin: center center;
   user-select: none;
   pointer-events: none;
@@ -604,6 +604,13 @@ body.map-mode .map-view {
   display: flex;
   gap: 0.5rem;
   z-index: 5;
+}
+
+.map-zoom-controls--fixed {
+  position: fixed;
+  right: clamp(3rem, 2vw, 1.5rem);
+  bottom: calc(var(--footer-height) + clamp(0.5rem, 2vh, 1rem));
+  z-index: 1200;
 }
 
 .map-zoom-controls button {
@@ -705,11 +712,11 @@ body {
 
 @media (max-width: 720px) {
   .expand-button {
-    width: 36px;
-    height: 36px;
-    border-radius: 10px;
+    width: 25px;
+    height: 25px;
+    border-radius: 5px;
     right: 10px;
-    bottom: 10px;
+    bottom: 20px;
   }
 
   .expand-button svg {

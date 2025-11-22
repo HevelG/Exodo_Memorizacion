@@ -101,9 +101,19 @@ const BACKGROUND_TARGET_OPACITY = 0.32;
 const MAP_DEFAULT_SCALE = .3;
 const MAP_MAX_SCALE = 2.2;
 const MAP_ZOOM_STEP = 0.12;
+const MAP_DRAG_THRESHOLD_PX = 6;
 let isMapMode = false;
 const mapState = { scale: MAP_DEFAULT_SCALE, x: 0, y: 0 };
-const mapDrag = { active: false, startX: 0, startY: 0, originX: 0, originY: 0, pointerId: null };
+const mapDrag = {
+  active: false,
+  startX: 0,
+  startY: 0,
+  originX: 0,
+  originY: 0,
+  pointerId: null,
+  moved: false,
+  suppressClick: false,
+};
 
 const modulo = (value, total) => {
   const remainder = value % total;
@@ -574,6 +584,8 @@ const startMapDrag = (event) => {
   if (!isMapMode || !mapViewportEl) return;
   if (event.target.closest && event.target.closest(".map-zoom-controls")) return;
   mapDrag.active = true;
+  mapDrag.moved = false;
+  mapDrag.suppressClick = false;
   mapDrag.startX = event.clientX;
   mapDrag.startY = event.clientY;
   mapDrag.originX = mapState.x;
@@ -588,6 +600,12 @@ const moveMapDrag = (event) => {
   event.preventDefault();
   const deltaX = event.clientX - mapDrag.startX;
   const deltaY = event.clientY - mapDrag.startY;
+  if (
+    !mapDrag.moved &&
+    (Math.abs(deltaX) > MAP_DRAG_THRESHOLD_PX || Math.abs(deltaY) > MAP_DRAG_THRESHOLD_PX)
+  ) {
+    mapDrag.moved = true;
+  }
   const clamped = clampMapPosition(mapDrag.originX + deltaX, mapDrag.originY + deltaY);
   mapState.x = clamped.x;
   mapState.y = clamped.y;
@@ -597,11 +615,50 @@ const moveMapDrag = (event) => {
 const endMapDrag = (event) => {
   if (!mapDrag.active || (mapDrag.pointerId !== null && event.pointerId !== mapDrag.pointerId)) return;
   mapDrag.active = false;
+  mapDrag.suppressClick = mapDrag.moved;
+  mapDrag.moved = false;
   mapViewportEl?.classList.remove("is-dragging");
   if (mapDrag.pointerId !== null && mapViewportEl?.hasPointerCapture(mapDrag.pointerId)) {
     mapViewportEl.releasePointerCapture(mapDrag.pointerId);
   }
   mapDrag.pointerId = null;
+};
+
+const clickIsOutsideMapImage = (event) => {
+  if (!mapImageEl) return true;
+  const rect = mapImageEl.getBoundingClientRect();
+  return (
+    event.clientX < rect.left ||
+    event.clientX > rect.right ||
+    event.clientY < rect.top ||
+    event.clientY > rect.bottom
+  );
+};
+
+const mapImageCoversViewport = () => {
+  if (!mapImageEl || !mapViewportEl) return false;
+  const imageRect = mapImageEl.getBoundingClientRect();
+  const viewportRect = mapViewportEl.getBoundingClientRect();
+  return (
+    imageRect.left <= viewportRect.left &&
+    imageRect.right >= viewportRect.right &&
+    imageRect.top <= viewportRect.top &&
+    imageRect.bottom >= viewportRect.bottom
+  );
+};
+
+const handleMapViewportClick = (event) => {
+  if (!isMapMode) return;
+  if (event.target.closest && event.target.closest(".map-zoom-controls")) return;
+  if (mapDrag.suppressClick) {
+    mapDrag.suppressClick = false;
+    return;
+  }
+  const clickedOutside = clickIsOutsideMapImage(event);
+  const noOutsideSpace = mapImageCoversViewport();
+  if (clickedOutside || noOutsideSpace) {
+    exitMapMode();
+  }
 };
 
 const updateBackgroundLayer = (imagePath, index, animate = true) => {
@@ -691,7 +748,10 @@ const bootstrap = () => {
   exitMapMode();
 
   if (viewToggleBtn) {
-    viewToggleBtn.addEventListener("click", toggleViewMode);
+    viewToggleBtn.addEventListener("click", (event) => {
+      event.preventDefault();
+      window.location.href = "mapa.html";
+    });
   }
 
   if (mapViewportEl) {
@@ -700,6 +760,7 @@ const bootstrap = () => {
     mapViewportEl.addEventListener("pointerup", endMapDrag);
     mapViewportEl.addEventListener("pointercancel", endMapDrag);
     mapViewportEl.addEventListener("pointerleave", endMapDrag);
+    mapViewportEl.addEventListener("click", handleMapViewportClick);
   }
 
   mapImageEl?.addEventListener("load", () => {
